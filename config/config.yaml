@@ -1,0 +1,248 @@
+# Photoner Configuration File
+# Automated Newspaper Photo Enhancement System
+# Version: 1.0
+
+# Directory Paths
+# Note: For development, use relative paths. For production (Synology NAS), use absolute paths like /volume1/photos/
+paths:
+  incoming: ./test_samples/incoming
+  archive: ./test_samples/archive
+  enhanced: ./enhanced
+  logs: ./logs
+  backup: ./originals_backup  # Optional - set to null to disable backups
+  temp: ./temp  # Temporary processing directory
+
+# Processing Settings
+processing:
+  # Output quality
+  jpeg_quality: 95  # 1-100, recommend 90-95 for high quality
+
+  # Resolution handling
+  preserve_resolution: true  # Never resize images
+
+  # Batch processing
+  max_batch_size: 500  # Maximum images per batch run
+  processing_threads: 2  # Conservative for 2GB RAM (1-4 threads)
+
+  # Memory management
+  max_memory_per_image_mb: 400  # Abort if single image exceeds this
+
+  # File handling
+  move_processed_originals: true  # Move originals to processed/ subfolder
+  create_backups: false  # Set to true for first run on production data
+
+  # Duplicate handling
+  skip_existing: true  # Skip if enhanced output already exists
+  check_timestamp: true  # Re-process if source is newer than output
+
+# Enhancement Parameters
+enhancement:
+  # Profile selection: conservative | aggressive | custom
+  profile: conservative
+
+  # CLAHE (Contrast Limited Adaptive Histogram Equalization)
+  clahe:
+    enabled: true
+    clip_limit: 2.5  # 2.0-3.5, higher = more contrast
+    tile_grid_size: 8  # 8x8 grid for local contrast
+
+  # White Balance Correction
+  white_balance:
+    enabled: true
+    method: gray_world  # gray_world | simple_white_balance
+
+  # Brightness/Exposure Correction
+  brightness:
+    enabled: true
+    auto_adjust: true
+    target_percentile: [5, 95]  # Target histogram range
+
+  # Color Saturation Enhancement
+  saturation:
+    enabled: true
+    boost_factor: 1.15  # 1.0-1.3, 1.15 = 15% increase
+    preserve_skin_tones: true
+
+  # Sharpening (Unsharp Mask)
+  sharpening:
+    enabled: true
+    radius: 1.5  # 1.0-2.0 pixels
+    amount: 0.7  # 0.5-1.0 strength
+    threshold: 0  # 0 = apply to all pixels
+
+  # Noise Reduction (Conditional)
+  noise_reduction:
+    enabled: true
+    auto_detect: true  # Only apply if ISO > threshold
+    iso_threshold: 800  # Apply if EXIF ISO exceeds this
+    strength: 5  # 1-10, higher = more smoothing
+    preserve_edges: true
+
+# Profile Presets (override enhancement settings above)
+profiles:
+  conservative:
+    clahe_clip_limit: 2.5
+    saturation_boost: 1.15
+    sharpening_amount: 0.7
+
+  aggressive:
+    clahe_clip_limit: 3.5
+    saturation_boost: 1.25
+    sharpening_amount: 1.0
+
+  custom:
+    # Uses values from enhancement section above
+    use_defaults: true
+
+# Scheduling Configuration
+schedule:
+  # Incoming photos processing
+  incoming:
+    enabled: true
+    check_interval_hours: 2
+    business_hours_only: true
+    business_hours_start: 6  # 6 AM
+    business_hours_end: 22  # 10 PM
+    max_runtime_minutes: 120  # 2 hours
+
+  # Archive photos processing
+  archive:
+    enabled: true
+    start_time: "23:00"  # 11 PM
+    max_duration_hours: 7  # Run until 6 AM
+    daily_target_images: 3000
+    priority_queue: true  # Process newer images first
+
+# Quality Control
+quality:
+  # Validation
+  validate_output: true  # Check output file integrity
+  validate_exif: true  # Ensure EXIF was preserved
+  validate_resolution: true  # Ensure resolution matches input
+
+  # Spot checking
+  spot_check_enabled: true
+  spot_check_frequency: 100  # Every Nth image
+
+  # Reporting
+  generate_comparison_html: true  # Create before/after comparisons
+  comparison_sample_size: 10  # Images per report
+
+  # Quality thresholds
+  flag_extreme_adjustments: true
+  extreme_brightness_delta: 0.3  # Flag if brightness changes >30%
+  extreme_size_ratio: 2.0  # Flag if output >2x input size
+
+# Logging Configuration
+logging:
+  # Log levels: DEBUG | INFO | WARNING | ERROR | CRITICAL
+  level: INFO
+
+  # Console output
+  console_enabled: true
+  console_level: INFO
+
+  # File logging
+  file_enabled: true
+  file_level: DEBUG
+
+  # Log rotation
+  max_log_size_mb: 100
+  backup_count: 5  # Keep 5 old log files
+
+  # Structured logging
+  json_format: true  # Use JSON for easier parsing
+  include_timestamps: true
+  include_thread_info: true
+
+  # Daily summary reports
+  daily_summary_enabled: true
+  daily_summary_time: "06:00"  # 6 AM
+  email_summary: false  # Set to true and configure SMTP for email reports
+
+  # Performance metrics
+  track_processing_time: true
+  track_memory_usage: true
+  track_error_rate: true
+
+# Error Handling
+error_handling:
+  # Retry logic
+  retry_failed_images: true
+  max_retries: 1
+  retry_delay_seconds: 5
+
+  # Failure thresholds
+  max_consecutive_failures: 10  # Abort batch after N consecutive failures
+  max_error_rate_percent: 10  # Abort if error rate exceeds this
+
+  # Corrupted file handling
+  skip_corrupted: true
+  log_corrupted: true
+  quarantine_corrupted: false  # Move corrupted files to quarantine folder
+
+  # Memory errors
+  reduce_batch_on_memory_error: true
+  memory_error_batch_reduction: 0.5  # Reduce batch size by 50%
+
+# File Type Support
+file_types:
+  # JPEG files
+  jpeg:
+    extensions: ['.jpg', '.jpeg', '.JPG', '.JPEG']
+    enabled: true
+
+  # RAW files
+  raw:
+    extensions: ['.cr2', '.CR2', '.nef', '.NEF', '.arw', '.ARW', '.dng', '.DNG']
+    enabled: true
+    convert_to_jpeg: true
+
+  # TIFF files
+  tiff:
+    extensions: ['.tif', '.tiff', '.TIF', '.TIFF']
+    enabled: true
+    treat_as_jpeg: true  # Process same as JPEG
+
+# Advanced Settings
+advanced:
+  # Color space handling
+  output_color_space: sRGB  # sRGB | AdobeRGB
+
+  # EXIF handling
+  preserve_all_exif: true
+  add_processing_tag: true
+  processing_software_name: "Photoner v1.0"
+
+  # Disk space management
+  min_free_space_gb: 10  # Abort if free space drops below this
+  check_space_before_batch: true
+
+  # Performance
+  use_opencv_optimization: true
+  use_multiprocessing: false  # Set to true for multi-core processing (use with caution on 2GB RAM)
+
+  # Debugging
+  save_intermediate_steps: false  # Save images at each enhancement stage (for debugging)
+  debug_output_dir: ./debug
+
+# Notification Settings (Optional)
+notifications:
+  enabled: false
+
+  # Email settings (requires SMTP configuration)
+  email:
+    enabled: false
+    smtp_host: smtp.example.com
+    smtp_port: 587
+    smtp_user: user@example.com
+    smtp_password: ""  # Use environment variable in production
+    from_address: photoner@example.com
+    to_addresses: [admin@example.com]
+
+  # Alert conditions
+  alerts:
+    on_batch_complete: false
+    on_error_threshold: true
+    on_disk_space_low: true
+    on_crash: true

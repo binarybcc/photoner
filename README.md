@@ -37,22 +37,56 @@ photoner/
 ### Installation
 
 ```bash
+# Clone repository
+git clone https://github.com/binarybcc/photoner.git
+cd photoner
+
 # Create virtual environment
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Run test suite
+./scripts/run_test.sh
 ```
 
 ### Testing
 
 ```bash
-# Test on sample images
-python src/photo_enhancer.py --mode test --batch-size 10 --input ./test_samples/
+# Add test images
+cp ~/Pictures/sample*.jpg test_samples/incoming/
+
+# Process test batch
+python src/photo_enhancer.py --mode test --batch-size 5
+
+# Check output
+ls -lh enhanced/incoming/
 
 # Validate EXIF preservation
-python scripts/validate_exif.py --original ./input.jpg --enhanced ./output.jpg
+python scripts/validate_exif.py \
+    --original test_samples/incoming/sample.jpg \
+    --enhanced enhanced/incoming/sample_enhanced.jpg
+```
+
+### Command Reference
+
+```bash
+# Test mode
+python src/photo_enhancer.py --mode test --batch-size 10
+
+# Process incoming photos (2 hours max)
+python src/photo_enhancer.py --mode incoming --batch-size 500
+
+# Process archive (overnight batch)
+python src/photo_enhancer.py --mode archive --batch-size 3000
+
+# Use aggressive enhancement profile
+python src/photo_enhancer.py --mode test --profile aggressive
+
+# Check system status
+python src/photo_enhancer.py --status
 ```
 
 ## Target Deployment
@@ -66,9 +100,23 @@ This system is designed to run on:
 
 ## Documentation
 
-- **CLAUDE.md**: Comprehensive implementation guidance
-- **newspaper_photo_enhancement_PRD.md**: Full product requirements document
-- **docs/**: Additional documentation (TODO)
+- **[QUICK_START.md](docs/QUICK_START.md)**: 10-minute getting started guide
+- **[DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)**: Complete Synology NAS deployment guide
+- **[CLAUDE.md](CLAUDE.md)**: Comprehensive implementation guidance for developers
+- **[newspaper_photo_enhancement_PRD.md](newspaper_photo_enhancement_PRD.md)**: Full product requirements document
+
+## Enhancement Pipeline
+
+Photoner applies the following enhancement operations in sequence:
+
+1. **CLAHE** - Contrast Limited Adaptive Histogram Equalization for local contrast
+2. **White Balance** - Automatic color temperature correction using gray world assumption
+3. **Brightness** - Histogram-based exposure adjustment
+4. **Saturation** - Subtle vibrancy boost (15% by default)
+5. **Noise Reduction** - Conditional (only for high ISO images >800)
+6. **Sharpening** - Unsharp mask for subtle detail enhancement
+
+All operations preserve original resolution and EXIF metadata
 
 ## Technology Stack
 
