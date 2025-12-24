@@ -251,6 +251,12 @@ class ImageProcessor:
             Enhanced image
         """
         clip_limit = self.enhancement_config["clahe"]["clip_limit"]
+
+        # Skip CLAHE if clip_limit is 0 (disabled)
+        if clip_limit == 0:
+            adjustments["contrast_delta"] = "disabled"
+            return image
+
         tile_size = self.enhancement_config["clahe"]["tile_grid_size"]
 
         # Convert to LAB color space for better results

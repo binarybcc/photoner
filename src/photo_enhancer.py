@@ -370,7 +370,7 @@ def main():
 
     parser.add_argument(
         "--profile",
-        choices=["conservative", "newspaper", "aggressive", "custom"],
+        choices=["conservative", "web-minimal", "aggressive", "custom"],
         help="Override enhancement profile",
     )
 

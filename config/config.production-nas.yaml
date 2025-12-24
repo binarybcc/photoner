@@ -27,6 +27,9 @@ processing:
   jpeg_quality: 95
   preserve_resolution: true
 
+  # Enhancement profile (overrides default)
+  profile: web-minimal  # Minimal polish: sharpening + slight saturation only
+
   # Move originals after processing
   move_processed_originals: true  # Move originals to /originals subfolder
   originals_folder_name: originals  # Name of subfolder for original files

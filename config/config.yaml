@@ -39,8 +39,8 @@ processing:
 
 # Enhancement Parameters
 enhancement:
-  # Profile selection: conservative | newspaper | aggressive | custom
-  profile: newspaper  # Default: optimized for digital display
+  # Profile selection: conservative | web-minimal | aggressive | custom
+  profile: web-minimal  # Default: minimal polish for web display
 
   # CLAHE (Contrast Limited Adaptive Histogram Equalization)
   clahe:
@@ -87,16 +87,16 @@ profiles:
     saturation_boost: 1.15
     sharpening_amount: 0.7
 
-  newspaper:
-    # Optimized for digital display (phones/laptops/desktops) - NOT print
-    # Assumes professional photographers already set good white balance
-    clahe_clip_limit: 2.0          # Gentler contrast (preserve shadow detail for screens)
-    saturation_boost: 1.20          # Slightly more vibrant for digital display
-    sharpening_amount: 0.8          # Crisper for high-DPI screens
-    brightness_percentile: [1, 99]  # Maximum shadow/highlight preservation
-    brightness_enabled: true        # Keep brightness adjustment
-    brightness_strength: 0.3        # Very gentle brightness (30% of calculated) - preserve natural look
-    white_balance_enabled: false    # DISABLED - professional photos already have good WB
+  web-minimal:
+    # Philosophy: "Less is more" - minimal polish, not correction
+    # Only safe, universal improvements that won't degrade professional photos
+    # Assumes photographers already did good work with white balance, exposure, etc.
+    clahe_clip_limit: 0             # DISABLED - can crush shadows/highlights
+    saturation_boost: 1.10          # Subtle pop for digital (10% boost)
+    sharpening_amount: 0.6          # Gentle sharpening for screen clarity
+    brightness_enabled: false       # DISABLED - trust photographer's exposure
+    white_balance_enabled: false    # DISABLED - trust photographer's WB
+    # Result: Originals get subtle sharpening + slight saturation, nothing else
 
   aggressive:
     clahe_clip_limit: 3.5
