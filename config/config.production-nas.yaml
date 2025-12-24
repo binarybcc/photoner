@@ -1,0 +1,287 @@
+# Photoner Production Configuration for NAS with Google Drive Sync
+# Optimized for low-impact processing during off-hours
+# Version: 1.0 - Smart Scheduling
+
+# Directory Paths (UPDATE THESE TO YOUR NAS PATHS)
+paths:
+  # Current photos (synced from Google Drive every 3 hours)
+  incoming: /volume1/photos/current_photos
+
+  # Historical archive photos
+  archive: /volume1/photos/archives
+
+  # Enhanced output
+  enhanced: /volume1/photos/enhanced
+
+  # Logs
+  logs: /volume1/photos/logs
+
+  # Temporary processing
+  temp: /volume1/photos/temp
+
+  # Optional backup (disable for production)
+  backup: null
+
+# Processing Settings
+processing:
+  jpeg_quality: 95
+  preserve_resolution: true
+
+  # Move originals after processing
+  move_processed_originals: true
+
+  # Skip already-processed files
+  skip_existing: true
+  check_timestamp: true
+
+  # Backups disabled for production (originals preserved anyway)
+  create_backups: false
+
+# Resource Management (Conservative for NAS)
+resources:
+  # Archive processing (1 AM - 3 AM) - Deep night, aggressive
+  archive:
+    max_batch_size: 2000
+    processing_threads: 2
+    max_memory_per_image_mb: 400
+
+  # Current catchup (3 AM - 8 AM) - Early morning, moderate
+  current_catchup:
+    max_batch_size: 1500
+    processing_threads: 2
+    max_memory_per_image_mb: 400
+
+  # Periodic checks (after hours) - Minimal impact
+  current_periodic:
+    max_batch_size: 200
+    processing_threads: 1
+    max_memory_per_image_mb: 400
+
+# Enhancement Parameters
+enhancement:
+  profile: conservative
+
+  clahe:
+    enabled: true
+    clip_limit: 2.5
+    tile_grid_size: 8
+
+  white_balance:
+    enabled: true
+    method: gray_world
+
+  brightness:
+    enabled: true
+    auto_adjust: true
+    target_percentile: [5, 95]
+
+  saturation:
+    enabled: true
+    boost_factor: 1.15
+    preserve_skin_tones: true
+
+  sharpening:
+    enabled: true
+    radius: 1.5
+    amount: 0.7
+    threshold: 0
+
+  noise_reduction:
+    enabled: true
+    auto_detect: true
+    iso_threshold: 800
+    strength: 5
+    preserve_edges: true
+
+# Smart Scheduling Configuration
+scheduling:
+  # Google Drive sync times (every 3 hours)
+  google_drive_sync_times:
+    - "00:00"
+    - "03:00"
+    - "06:00"
+    - "09:00"
+    - "12:00"
+    - "15:00"
+    - "18:00"
+    - "21:00"
+
+  # Pause processing around sync times
+  sync_pause_buffer_minutes: 10  # Pause 10 min before/after
+
+  # Phase 1: Archive Processing (1 AM - 3 AM)
+  archive_processing:
+    enabled: true
+    start_time: "01:00"
+    end_time: "03:00"
+
+    daily_target_images: 2000
+    priority: "oldest_first"
+
+    # Stop early if approaching Google Drive sync
+    stop_before_sync_minutes: 15
+
+  # Phase 2: Current Photos Catchup (3:10 AM - 7:45 AM)
+  current_catchup:
+    enabled: true
+    start_time: "03:10"  # After 3 AM sync completes
+    end_time: "07:45"    # Before business hours
+
+    # Pause during 6 AM Google Drive sync
+    pause_windows:
+      - start: "05:50"
+        end: "06:10"
+
+    daily_target_images: 5000
+    priority: "newest_first"
+
+    # Stop when queue is empty (caught up)
+    stop_when_empty: true
+
+  # Phase 3: Periodic Current Photos (After Catchup)
+  current_periodic:
+    enabled: true
+
+    # Only run during these low-usage windows
+    allowed_windows:
+      # After 9 PM sync (9:15 PM - 11:45 PM)
+      - start: "21:15"
+        end: "23:45"
+
+      # After midnight sync (12:15 AM - 12:45 AM)
+      - start: "00:15"
+        end: "00:45"
+
+    max_images_per_run: 200
+    priority: "newest_first"
+
+    # Check every 30 minutes during allowed windows
+    check_interval_minutes: 30
+
+# Quality Control
+quality:
+  validate_output: true
+  validate_exif: true
+  validate_resolution: true
+
+  spot_check_enabled: true
+  spot_check_frequency: 100
+
+  generate_comparison_html: false  # Disable for production (saves resources)
+
+  flag_extreme_adjustments: true
+  extreme_brightness_delta: 0.3
+  extreme_size_ratio: 2.0
+
+# Logging
+logging:
+  level: INFO
+  console_enabled: false  # Disable console for cron jobs
+  file_enabled: true
+  file_level: INFO
+
+  max_log_size_mb: 100
+  backup_count: 10
+
+  json_format: true
+  include_timestamps: true
+  include_thread_info: true
+
+  daily_summary_enabled: true
+  daily_summary_time: "08:00"
+
+  track_processing_time: true
+  track_memory_usage: true
+  track_error_rate: true
+
+# Error Handling
+error_handling:
+  retry_failed_images: true
+  max_retries: 1
+  retry_delay_seconds: 5
+
+  max_consecutive_failures: 20
+  max_error_rate_percent: 15
+
+  skip_corrupted: true
+  log_corrupted: true
+  quarantine_corrupted: false
+
+  reduce_batch_on_memory_error: true
+  memory_error_batch_reduction: 0.5
+
+# File Type Support
+file_types:
+  jpeg:
+    extensions: ['.jpg', '.jpeg', '.JPG', '.JPEG']
+    enabled: true
+
+  raw:
+    extensions: ['.cr2', '.CR2', '.nef', '.NEF', '.arw', '.ARW', '.dng', '.DNG']
+    enabled: true
+    convert_to_jpeg: true
+
+  tiff:
+    extensions: ['.tif', '.tiff', '.TIF', '.TIFF']
+    enabled: true
+    treat_as_jpeg: true
+
+# Advanced Settings
+advanced:
+  output_color_space: sRGB
+
+  preserve_all_exif: true
+  add_processing_tag: true
+  processing_software_name: "Photoner v1.0"
+
+  min_free_space_gb: 50  # More conservative for production
+  check_space_before_batch: true
+
+  use_opencv_optimization: true
+  use_multiprocessing: false
+
+  save_intermediate_steps: false
+
+# NAS-Specific Optimizations
+nas_optimizations:
+  # Reduce disk I/O during processing
+  minimize_disk_writes: true
+
+  # Check NAS health before starting
+  check_system_load: true
+  max_cpu_percent: 85
+  max_memory_percent: 90
+
+  # Network consideration
+  avoid_network_heavy_hours: true
+  network_heavy_hours: "08:00-18:00"
+
+  # Graceful degradation
+  auto_reduce_load_on_stress: true
+  stress_threshold_cpu: 90
+  stress_threshold_memory: 95
+
+# Monitoring & Alerts
+monitoring:
+  enabled: true
+
+  # Check these metrics
+  metrics:
+    - disk_space
+    - cpu_usage
+    - memory_usage
+    - error_rate
+    - processing_throughput
+
+  # Alert thresholds
+  alerts:
+    disk_space_warning_gb: 100
+    disk_space_critical_gb: 50
+    error_rate_warning: 10  # percent
+    error_rate_critical: 20  # percent
+    consecutive_failures: 15
+
+  # Notification (configure if needed)
+  notifications:
+    enabled: false
+    method: "log"  # log | email | webhook
