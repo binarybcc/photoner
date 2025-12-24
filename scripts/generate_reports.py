@@ -30,7 +30,7 @@ def main():
 
     parser.add_argument(
         "--report-type",
-        choices=["stats", "csv", "cleanup", "errors", "all"],
+        choices=["stats", "csv", "errors", "all"],
         default="stats",
         help="Type of report to generate"
     )
@@ -40,13 +40,6 @@ def main():
         type=int,
         default=30,
         help="Number of days to include in report"
-    )
-
-    parser.add_argument(
-        "--cleanup-age",
-        type=int,
-        default=30,
-        help="Only include files older than N days in cleanup manifest"
     )
 
     args = parser.parse_args()
@@ -92,23 +85,6 @@ def main():
 
         csv_path = record_keeper.export_to_csv(days=args.days)
         print(f"✓ CSV exported to: {csv_path}")
-        print()
-
-    if args.report_type in ["cleanup", "all"]:
-        print(f"Cleanup Manifest (Files older than {args.cleanup_age} days)")
-        print("-" * 70)
-
-        manifest_path = record_keeper.create_cleanup_manifest(older_than_days=args.cleanup_age)
-        print(f"✓ Cleanup manifest created: {manifest_path}")
-        print()
-
-        # Show preview
-        candidates = record_keeper.get_cleanup_candidates()
-        total_size = sum(c['size_bytes'] for c in candidates)
-
-        print(f"Ready for cleanup:")
-        print(f"  Files: {len(candidates)}")
-        print(f"  Total Size: {total_size / (1024**3):.2f} GB")
         print()
 
     if args.report_type in ["errors", "all"]:

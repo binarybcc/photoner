@@ -102,6 +102,8 @@ This system is designed to run on:
 
 - **[QUICK_START.md](docs/QUICK_START.md)**: 10-minute getting started guide
 - **[DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)**: Complete Synology NAS deployment guide
+- **[SMART_SCHEDULING_SETUP.md](docs/SMART_SCHEDULING_SETUP.md)**: Intelligent scheduling for NAS-friendly operation
+- **[RECORD_KEEPING.md](docs/RECORD_KEEPING.md)**: Logging, monitoring, and the /processed folder system
 - **[CLAUDE.md](CLAUDE.md)**: Comprehensive implementation guidance for developers
 - **[newspaper_photo_enhancement_PRD.md](newspaper_photo_enhancement_PRD.md)**: Full product requirements document
 
