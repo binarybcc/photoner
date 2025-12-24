@@ -61,6 +61,8 @@ class ImageProcessor:
                 self.enhancement_config["brightness"]["strength"] = profile_settings["brightness_strength"]
             if "brightness_enabled" in profile_settings:
                 self.enhancement_config["brightness"]["enabled"] = profile_settings["brightness_enabled"]
+            if "white_balance_enabled" in profile_settings:
+                self.enhancement_config["white_balance"]["enabled"] = profile_settings["white_balance_enabled"]
 
     def process_image(self, input_path: Path, output_path: Path) -> Dict[str, Any]:
         """
