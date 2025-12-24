@@ -1,21 +1,21 @@
 # Core Image Processing
-opencv-python==4.8.1.78
-numpy==1.24.3
+opencv-python>=4.8.1
+numpy>=1.26.0  # Updated for Python 3.13 compatibility
 
 # RAW File Handling
-rawpy==0.18.1
+rawpy>=0.18.1
 
 # Additional Image Operations
-Pillow==10.1.0
+Pillow>=10.1.0
 
 # EXIF Metadata
-piexif==1.1.3
+piexif>=1.1.3
 
 # Configuration Management
-pyyaml==6.0.1
+pyyaml>=6.0
 
 # Progress Bars (Optional)
-tqdm==4.66.1
+tqdm>=4.66.1
 
 # Development Dependencies (uncomment for development)
 # pytest==7.4.3

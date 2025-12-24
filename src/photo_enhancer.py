@@ -6,6 +6,7 @@ batch processing, error handling, and crash recovery.
 
 import sys
 import argparse
+import shutil
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import yaml
@@ -163,16 +164,28 @@ class PhotoEnhancer:
 
                 result = self.processor.process_image(image_path, output_path)
 
+                # Handle file organization based on config
+                final_enhanced_path = output_path
+                if self.config["processing"].get("replace_with_enhanced", False):
+                    # Move original to /originals/ subfolder
+                    originals_path = self.file_manager.move_to_originals(image_path)
+
+                    # Move enhanced image to original location
+                    if originals_path:
+                        final_enhanced_path = originals_path.parent.parent / image_path.name
+                        shutil.move(str(output_path), str(final_enhanced_path))
+                        self.logger.debug(f"Replaced original with enhanced: {final_enhanced_path}")
+                else:
+                    # Original behavior: move to /processed subfolder
+                    if self.config["processing"].get("move_processed_originals", False):
+                        originals_path = self.file_manager.move_to_originals(image_path)
+
                 self.logger.log_processing_complete(
                     str(image_path),
-                    str(output_path),
+                    str(final_enhanced_path),
                     start_time,
                     result.get("adjustments")
                 )
-
-                # Move original to processed folder if configured
-                if self.config["processing"].get("move_processed_originals", False):
-                    self.file_manager.move_to_processed(image_path)
 
                 results["successful"].append(str(image_path))
                 self.stats["total_processed"] += 1

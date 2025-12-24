@@ -77,52 +77,48 @@ Failed processing attempts:
 
 **Query anytime with SQL!**
 
-## The /processed Folder System
+## The /originals Folder System
 
 ### How It Works
 
-After successful enhancement, originals are **moved** to a `/processed` subfolder:
+After successful enhancement, originals are **moved** to an `/originals` subfolder and enhanced versions replace them in the main folder:
 
 ```
 Before Processing:
 /volume1/photos/incoming/
 └── 2024-12-23/
-    ├── photo_001.jpg
-    ├── photo_002.jpg
-    └── photo_003.jpg
+    ├── photo_001.jpg  (original)
+    ├── photo_002.jpg  (original)
+    └── photo_003.jpg  (original)
 
 After Processing:
 /volume1/photos/incoming/
 └── 2024-12-23/
-    └── processed/              ← Originals moved here
+    ├── photo_001.jpg              ← Enhanced versions in main folder
+    ├── photo_002.jpg
+    ├── photo_003.jpg
+    └── originals/                 ← Originals moved here
         ├── photo_001.jpg
         ├── photo_002.jpg
         └── photo_003.jpg
-
-Enhanced Versions:
-/volume1/photos/enhanced/
-└── incoming/
-    └── 2024-12-23/
-        ├── photo_001_enhanced.jpg
-        ├── photo_002_enhanced.jpg
-        └── photo_003_enhanced.jpg
 ```
 
 ### Why This Helps
 
 **Easy identification:**
-- Files in `/processed` = Successfully enhanced
-- Enhanced version exists in `/enhanced`
-- Original is redundant (you have Glacier backup)
+- Files in main folders are **enhanced versions** ready for use
+- Files in `/originals` subfolders = Original versions (backed up in Glacier)
+- Enhanced versions have replaced originals in main folders
+- Original files can be deleted when storage cleanup is needed
 
 **Manual cleanup is simple:**
 ```bash
-# Delete all processed originals (when you're ready)
-rm -rf /volume1/photos/incoming/*/processed/
-rm -rf /volume1/photos/archive/*/processed/
+# Delete all original files (when you're ready)
+rm -rf /volume1/photos/incoming/*/originals/
+rm -rf /volume1/photos/archive/*/originals/
 
 # Or use File Station GUI
-# Navigate to /processed folders and delete
+# Navigate to /originals folders and delete
 ```
 
 ### Disable This Feature (Optional)
@@ -131,6 +127,7 @@ In `config.yaml`:
 ```yaml
 processing:
   move_processed_originals: false  # Keep originals in place
+  replace_with_enhanced: false     # Don't replace with enhanced versions
 ```
 
 ## Generating Reports
@@ -168,8 +165,8 @@ python scripts/generate_reports.py --report-type csv --days 90
 **Output:** `/volume1/photos/logs/reports/processing_2024-12-23.csv`
 
 ```csv
-Timestamp,Original Path,Enhanced Path,Status,Processing Time (sec),Error,Moved to Processed,Processed Folder Path
-2024-12-23T03:45:12Z,/volume1/photos/incoming/DSC_0001.jpg,/volume1/photos/enhanced/incoming/DSC_0001_enhanced.jpg,success,3.2,,true,/volume1/photos/incoming/processed/DSC_0001.jpg
+Timestamp,Original Path,Enhanced Path,Status,Processing Time (sec),Error,Moved to Originals,Originals Folder Path
+2024-12-23T03:45:12Z,/volume1/photos/incoming/DSC_0001.jpg,/volume1/photos/incoming/DSC_0001.jpg,success,3.2,,true,/volume1/photos/incoming/originals/DSC_0001.jpg
 ```
 
 **Use cases:**
@@ -214,7 +211,7 @@ python scripts/generate_reports.py --report-type all --days 30
 sqlite3 /volume1/photos/logs/database/processing_records.db
 ```
 
-**Files in /processed folders:**
+**Files in /originals folders:**
 ```sql
 SELECT
     processed_folder_path,
@@ -226,7 +223,7 @@ AND status = 'success'
 ORDER BY timestamp;
 ```
 
-**Space used by /processed folders:**
+**Space used by /originals folders:**
 ```sql
 SELECT
     COUNT(*) as files,
@@ -251,15 +248,15 @@ ORDER BY timestamp;
 ### Using File System Tools
 
 ```bash
-# Count files in /processed
-find /volume1/photos -type d -name "processed" -exec sh -c 'echo "$1: $(find "$1" -type f | wc -l) files"' _ {} \;
+# Count files in /originals
+find /volume1/photos -type d -name "originals" -exec sh -c 'echo "$1: $(find "$1" -type f | wc -l) files"' _ {} \;
 
 # Check disk space used
-du -sh /volume1/photos/*/processed
-du -sh /volume1/photos/*/*/processed
+du -sh /volume1/photos/*/originals
+du -sh /volume1/photos/*/*/originals
 
-# List oldest /processed folders
-find /volume1/photos -type d -name "processed" -printf '%T+ %p\n' | sort | head -20
+# List oldest /originals folders
+find /volume1/photos -type d -name "originals" -printf '%T+ %p\n' | sort | head -20
 ```
 
 ## Manual Cleanup When Ready
@@ -268,23 +265,23 @@ find /volume1/photos -type d -name "processed" -printf '%T+ %p\n' | sort | head 
 
 ```bash
 # 1. Verify Glacier backups are working
-# 2. Spot-check enhanced versions
-# 3. Delete specific old folders
+# 2. Spot-check enhanced versions in main folders
+# 3. Delete specific old original folders
 
-rm -rf /volume1/photos/incoming/2024-01-*/processed/
+rm -rf /volume1/photos/incoming/2024-01-*/originals/
 ```
 
 ### Complete Cleanup
 
 ```bash
-# Delete ALL /processed folders (when confident)
-find /volume1/photos -type d -name "processed" -exec rm -rf {} +
+# Delete ALL /originals folders (when confident)
+find /volume1/photos -type d -name "originals" -exec rm -rf {} +
 ```
 
 ### Synology File Station
 
 1. Navigate to `/volume1/photos/`
-2. Search for folders named "processed"
+2. Search for folders named "originals"
 3. Select and delete as needed
 
 **Advantages:**
@@ -449,13 +446,13 @@ ps aux | grep photo_enhancer
 
 ### Disk Space Filling Up
 
-**Check /processed folders:**
+**Check /originals folders:**
 ```bash
-du -sh /volume1/photos/*/processed
-du -sh /volume1/photos/*/*/processed
+du -sh /volume1/photos/*/originals
+du -sh /volume1/photos/*/*/originals
 
-# Total space in /processed
-find /volume1/photos -type d -name "processed" -exec du -sb {} + | awk '{sum+=$1} END {print sum/1024/1024/1024 " GB"}'
+# Total space in /originals
+find /volume1/photos -type d -name "originals" -exec du -sb {} + | awk '{sum+=$1} END {print sum/1024/1024/1024 " GB"}'
 ```
 
 **Delete when ready** (manually, at your discretion).
@@ -465,13 +462,14 @@ find /volume1/photos -type d -name "processed" -exec du -sb {} + | awk '{sum+=$1
 **Photoner handles:**
 - ✅ Image enhancement
 - ✅ Comprehensive logging
-- ✅ Moving originals to /processed
+- ✅ Moving originals to /originals subfolder
+- ✅ Replacing originals with enhanced versions in main folders
 - ✅ Performance tracking
 - ✅ Error monitoring
 - ✅ Report generation
 
 **You handle:**
-- 🗑️ Deleting /processed folders when ready
+- 🗑️ Deleting /originals folders when ready
 - 📦 Managing Glacier backups
 - 💾 Storage capacity planning
 - 🔍 Deciding retention policies

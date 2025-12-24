@@ -28,7 +28,9 @@ processing:
   preserve_resolution: true
 
   # Move originals after processing
-  move_processed_originals: true
+  move_processed_originals: true  # Move originals to /originals subfolder
+  originals_folder_name: originals  # Name of subfolder for original files
+  replace_with_enhanced: true  # Enhanced images replace originals in main folder
 
   # Skip already-processed files
   skip_existing: true

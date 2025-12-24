@@ -184,34 +184,49 @@ class FileManager:
     def _generate_output_path(self, input_path: Path) -> Path:
         """
         Generate output path for enhanced image.
+        If replace_with_enhanced is True, uses temp directory for processing,
+        otherwise uses enhanced directory structure.
 
         Args:
             input_path: Input image path
 
         Returns:
-            Output path in enhanced directory
+            Output path for enhanced image
         """
-        # Determine which source directory this file came from
-        input_str = str(input_path.resolve())
-        enhanced_base = Path(self.paths["enhanced"])
+        replace_with_enhanced = self.config["processing"].get("replace_with_enhanced", False)
 
-        # Preserve directory structure relative to source
-        if self.paths.get("incoming") and str(Path(self.paths["incoming"]).resolve()) in input_str:
-            relative_path = input_path.relative_to(Path(self.paths["incoming"]).resolve())
-            output_dir = enhanced_base / "incoming" / relative_path.parent
-        elif self.paths.get("archive") and str(Path(self.paths["archive"]).resolve()) in input_str:
-            relative_path = input_path.relative_to(Path(self.paths["archive"]).resolve())
-            output_dir = enhanced_base / "archive" / relative_path.parent
+        if replace_with_enhanced:
+            # Create temp file that will replace the original
+            temp_dir = Path(self.paths["temp"])
+            temp_dir.mkdir(parents=True, exist_ok=True)
+
+            # Use same filename as input (will replace original location)
+            output_filename = input_path.name
+            output_path = temp_dir / f"enhanced_{input_path.name}"
+
+            return output_path
         else:
-            # Fallback: use same relative structure
-            output_dir = enhanced_base / input_path.parent.name
+            # Original behavior: create in separate enhanced/ directory
+            input_str = str(input_path.resolve())
+            enhanced_base = Path(self.paths["enhanced"])
 
-        # Create output directory
-        output_dir.mkdir(parents=True, exist_ok=True)
+            # Preserve directory structure relative to source
+            if self.paths.get("incoming") and str(Path(self.paths["incoming"]).resolve()) in input_str:
+                relative_path = input_path.relative_to(Path(self.paths["incoming"]).resolve())
+                output_dir = enhanced_base / "incoming" / relative_path.parent
+            elif self.paths.get("archive") and str(Path(self.paths["archive"]).resolve()) in input_str:
+                relative_path = input_path.relative_to(Path(self.paths["archive"]).resolve())
+                output_dir = enhanced_base / "archive" / relative_path.parent
+            else:
+                # Fallback: use same relative structure
+                output_dir = enhanced_base / input_path.parent.name
 
-        # Generate output filename (add _enhanced suffix)
-        stem = input_path.stem
-        output_filename = f"{stem}_enhanced.jpg"  # Always output as JPEG
+            # Create output directory
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            # Generate output filename (add _enhanced suffix)
+            stem = input_path.stem
+            output_filename = f"{stem}_enhanced.jpg"  # Always output as JPEG
 
         return output_dir / output_filename
 
@@ -304,34 +319,37 @@ class FileManager:
             self.logger.error(f"Failed to write file: {output_path}", error=str(e))
             return False
 
-    def move_to_processed(self, file_path: Path) -> bool:
+    def move_to_originals(self, file_path: Path) -> Optional[Path]:
         """
-        Move original file to 'processed' subdirectory.
+        Move original file to 'originals' subdirectory.
 
         Args:
             file_path: File to move
 
         Returns:
-            True if successful, False otherwise
+            Path to moved file, or None if failed
         """
         if not self.config["processing"].get("move_processed_originals", True):
-            return True  # Feature disabled
+            return None  # Feature disabled
 
         try:
-            # Create processed subdirectory
-            processed_dir = file_path.parent / "processed"
-            processed_dir.mkdir(exist_ok=True)
+            # Get originals folder name from config
+            originals_folder = self.config["processing"].get("originals_folder_name", "originals")
+
+            # Create originals subdirectory
+            originals_dir = file_path.parent / originals_folder
+            originals_dir.mkdir(exist_ok=True)
 
             # Move file
-            destination = processed_dir / file_path.name
+            destination = originals_dir / file_path.name
             shutil.move(str(file_path), str(destination))
 
-            self.logger.debug(f"Moved to processed: {file_path} -> {destination}")
-            return True
+            self.logger.debug(f"Moved to originals: {file_path} -> {destination}")
+            return destination
 
         except Exception as e:
             self.logger.error(f"Failed to move file: {file_path}", error=str(e))
-            return False
+            return None
 
     def create_backup(self, file_path: Path) -> Optional[Path]:
         """

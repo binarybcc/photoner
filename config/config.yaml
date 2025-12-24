@@ -28,7 +28,9 @@ processing:
   max_memory_per_image_mb: 400  # Abort if single image exceeds this
 
   # File handling
-  move_processed_originals: true  # Move originals to processed/ subfolder
+  move_processed_originals: true  # Move originals to /originals subfolder
+  originals_folder_name: originals  # Name of subfolder for original files
+  replace_with_enhanced: true  # Enhanced images replace originals in main folder
   create_backups: false  # Set to true for first run on production data
 
   # Duplicate handling
