@@ -55,6 +55,12 @@ class ImageProcessor:
                 self.enhancement_config["saturation"]["boost_factor"] = profile_settings["saturation_boost"]
             if "sharpening_amount" in profile_settings:
                 self.enhancement_config["sharpening"]["amount"] = profile_settings["sharpening_amount"]
+            if "brightness_percentile" in profile_settings:
+                self.enhancement_config["brightness"]["target_percentile"] = profile_settings["brightness_percentile"]
+            if "brightness_strength" in profile_settings:
+                self.enhancement_config["brightness"]["strength"] = profile_settings["brightness_strength"]
+            if "brightness_enabled" in profile_settings:
+                self.enhancement_config["brightness"]["enabled"] = profile_settings["brightness_enabled"]
 
     def process_image(self, input_path: Path, output_path: Path) -> Dict[str, Any]:
         """
@@ -321,9 +327,12 @@ class ImageProcessor:
         current_low = np.percentile(v_channel, target_percentile[0])
         current_high = np.percentile(v_channel, target_percentile[1])
 
-        # Target: spread histogram from 5% to 95% of value range
-        target_low = 255 * 0.05
-        target_high = 255 * 0.95
+        # Target: spread histogram to match percentile range
+        target_low = 255 * (target_percentile[0] / 100.0)
+        target_high = 255 * (target_percentile[1] / 100.0)
+
+        # Get brightness strength (default 1.0 = full adjustment)
+        brightness_strength = self.enhancement_config["brightness"].get("strength", 1.0)
 
         # Calculate scaling
         current_range = current_high - current_low
@@ -333,8 +342,12 @@ class ImageProcessor:
             scale = target_range / current_range
             offset = target_low - (current_low * scale)
 
-            # Apply brightness adjustment
-            v_channel = np.clip(v_channel * scale + offset, 0, 255)
+            # Apply brightness adjustment with strength modifier
+            # strength=1.0 means full adjustment, strength=0.5 means 50% adjustment
+            scale_adjusted = 1.0 + (scale - 1.0) * brightness_strength
+            offset_adjusted = offset * brightness_strength
+
+            v_channel = np.clip(v_channel * scale_adjusted + offset_adjusted, 0, 255)
 
             brightness_delta = (np.mean(v_channel) - np.mean(hsv[:, :, 2])) / 255.0
             adjustments["brightness_delta"] = f"{brightness_delta:+.2%}"

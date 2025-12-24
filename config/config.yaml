@@ -39,8 +39,8 @@ processing:
 
 # Enhancement Parameters
 enhancement:
-  # Profile selection: conservative | aggressive | custom
-  profile: conservative
+  # Profile selection: conservative | newspaper | aggressive | custom
+  profile: newspaper  # Default: optimized for digital display
 
   # CLAHE (Contrast Limited Adaptive Histogram Equalization)
   clahe:
@@ -86,6 +86,15 @@ profiles:
     clahe_clip_limit: 2.5
     saturation_boost: 1.15
     sharpening_amount: 0.7
+
+  newspaper:
+    # Optimized for digital display (phones/laptops/desktops) - NOT print
+    clahe_clip_limit: 2.0          # Gentler contrast (preserve shadow detail for screens)
+    saturation_boost: 1.20          # Slightly more vibrant for digital display
+    sharpening_amount: 0.8          # Crisper for high-DPI screens
+    brightness_percentile: [1, 99]  # Maximum shadow/highlight preservation
+    brightness_enabled: true        # Keep brightness adjustment
+    brightness_strength: 0.3        # Very gentle brightness (30% of calculated) - preserve natural look
 
   aggressive:
     clahe_clip_limit: 3.5
